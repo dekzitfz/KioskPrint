@@ -171,10 +171,10 @@ class MainActivity : ComponentActivity() {
                     TestPrintScreen(
                         eventLog = eventLog.value,
                         onPrintAsImage = { content ->
-                            printText(content)
+                            printImage(content)
                         },
                         onPrintAsText = { content ->
-                            printImage(content)
+                            printText(content)
                         }
                     )
                 }

@@ -29,15 +29,17 @@ fun PrintView(content: String){
         modifier = Modifier
             .width(280.dp)
             .background(Color.White)
-            .padding(vertical = 100.dp)
     ) {
-        Text(
-            content,
-            fontSize = 44.sp,
-            color = Color.Black,
-            textAlign = TextAlign.Center,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier
-        )
+        repeat(5) {
+            Text(
+                content,
+                fontSize = 44.sp,
+                color = Color.Black,
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+            )
+        }
+
     }
 }
