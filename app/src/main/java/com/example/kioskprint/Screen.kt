@@ -5,4 +5,7 @@ import kotlinx.serialization.Serializable
 sealed class Screen {
     @Serializable
     object PrintTest : Screen()
+
+    @Serializable
+    object QRTest: Screen()
 }

@@ -22,6 +22,18 @@ fun PrintViewPreview(){
     PrintView("8899")
 }
 
+@Preview
+@Composable
+fun EmptyPrintView(){
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .width(280.dp)
+            .height(50.dp)
+            .background(Color.White)
+    ) {}
+}
+
 @Composable
 fun PrintView(content: String){
     Column(

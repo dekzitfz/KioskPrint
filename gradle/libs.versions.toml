@@ -21,6 +21,7 @@ timber = "5.0.1"
 qrgenerator = "4.5.0"
 printer = "1.0.24"
 accompanist = "0.37.3"
+usbserial = "3.9.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -49,6 +50,7 @@ timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "tim
 qr = { group = "io.github.g0dkar", name = "qrcode-kotlin", version.ref = "qrgenerator" }
 printer = { group = "com.sunmi", name = "printerlibrary", version.ref = "printer" }
 accompanist = { group = "com.google.accompanist", name = "accompanist-drawablepainter", version.ref = "accompanist" }
+serial = { group = "com.github.mik3y", name = "usb-serial-for-android", version.ref = "usbserial" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
