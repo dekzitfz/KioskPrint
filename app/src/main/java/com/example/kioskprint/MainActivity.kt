@@ -26,6 +26,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.view.drawToBitmap
 import androidx.lifecycle.lifecycleScope
+import com.epson.epos2.Epos2Exception
+import com.epson.epos2.discovery.DeviceInfo
+import com.epson.epos2.discovery.Discovery
+import com.epson.epos2.discovery.FilterOption
+import com.epson.epos2.printer.Printer
 import com.example.kioskprint.ui.EmptyPrintView
 import com.example.kioskprint.ui.PrintView
 import com.example.kioskprint.ui.TestQRScreen
@@ -38,11 +43,14 @@ import com.sunmi.peripheral.printer.InnerResultCallback
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import timber.log.Timber
 import kotlin.collections.joinToString
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 class MainActivity : ComponentActivity(), SerialInputOutputManager.Listener {
+
+    private var externalPrinterIPAddress: String? = null
 
     private val ACTION_USB_PERMISSION = BuildConfig.APPLICATION_ID + ".GRANT_USB"
     private lateinit var usbManager: UsbManager
@@ -218,6 +226,7 @@ class MainActivity : ComponentActivity(), SerialInputOutputManager.Listener {
     override fun onStart() {
         setupPrinter()
         registerUSBReceiver()
+        findPrinterInNetwork()
         super.onStart()
     }
 
@@ -242,7 +251,7 @@ class MainActivity : ComponentActivity(), SerialInputOutputManager.Listener {
             val navController = rememberNavController()
             NavHost(
                 navController = navController,
-                startDestination = Screen.QRTest
+                startDestination = Screen.PrintTest
             ) {
                 composable<Screen.PrintTest> {
                     TestPrintScreen(
@@ -251,7 +260,9 @@ class MainActivity : ComponentActivity(), SerialInputOutputManager.Listener {
                             printImage(content)
                         },
                         onPrintAsText = { content ->
-                            printText(content)
+                            externalPrinterIPAddress?.let {
+                                connectAndPrintToExternalPrinter()
+                            }
                         }
                     )
                 }
@@ -349,5 +360,37 @@ class MainActivity : ComponentActivity(), SerialInputOutputManager.Listener {
                 }
             }
         }
+    }
+
+    private fun findPrinterInNetwork(){
+        val filterOption = FilterOption().apply {
+            portType = Discovery.PORTTYPE_TCP
+            epsonFilter = Discovery.FILTER_NAME
+            deviceModel = Discovery.MODEL_ALL
+            deviceType = Discovery.TYPE_PRINTER
+        }
+
+        Discovery.start(this, filterOption) { deviceInfo ->
+            appendLog("printer found: ${deviceInfo.deviceName} (${deviceInfo.ipAddress})")
+            externalPrinterIPAddress = deviceInfo.ipAddress
+
+        }
+    }
+
+    private fun connectAndPrintToExternalPrinter(){
+        try {
+            val printer = Printer(Printer.TM_U220, Printer.MODEL_ANK, this)
+            printer.addText("Testing from LAN!\n")
+            printer.addCut(Printer.CUT_FEED)
+
+            printer.connect("TCP:${externalPrinterIPAddress}", Printer.PARAM_DEFAULT)
+            printer.beginTransaction()
+            printer.sendData(Printer.PARAM_DEFAULT)
+            printer.endTransaction()
+            printer.disconnect()
+        } catch (e: Epos2Exception){
+            appendLog("error printing external: ${e.message}")
+        }
+
     }
 }
