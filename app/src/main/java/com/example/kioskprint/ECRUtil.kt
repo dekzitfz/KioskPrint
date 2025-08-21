@@ -61,10 +61,11 @@ fun Int.toPriceAmountHexString(): String {
 }
 
 //generate show QRIS Command
-fun generateShowQRISCommand(amount: Double, transactionId: String): String {
+fun generateShowQRISCommand(amount: Double, transactionId: String? = null): String {
     val amountHex = amount.roundToInt().toPriceAmountHexString()
-    val trxIdHex = "4944" + transactionId.asciiToHexString()
-    val command = "$HEADER$VERSION$TRANS_TYPE_SHOW_QRIS$SUB_TRANS_TYPE_SHOW_QRIS$amountHex$trxIdHex$STOP_TAG"
+    //val trxIdHex = "4944" + transactionId.asciiToHexString()
+    //val command = "$HEADER$VERSION$TRANS_TYPE_SHOW_QRIS$SUB_TRANS_TYPE_SHOW_QRIS$amountHex$trxIdHex$STOP_TAG"
+    val command = "$HEADER$VERSION$TRANS_TYPE_SHOW_QRIS$SUB_TRANS_TYPE_SHOW_QRIS$amountHex$STOP_TAG"
     val crc = command.calculateCRC()
     return "$command$crc"
 }

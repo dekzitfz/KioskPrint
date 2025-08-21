@@ -38,6 +38,7 @@ import com.sunmi.peripheral.printer.InnerResultCallback
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.collections.joinToString
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -180,9 +181,9 @@ class MainActivity : ComponentActivity(), SerialInputOutputManager.Listener {
                     appendLog("transaction success")
 
                     val asciiString = hexStringToAscii(hexData)
-                    val transactionType = extractFieldFromAscii(asciiString, 4)
+                    //val transactionType = extractFieldFromAscii(asciiString, 4)
 
-                    if(transactionType == "SALE QR"){
+                    /*if(transactionType == "SALE QR"){
                         val QRISTransactionId = extractFieldFromAscii(asciiString, 15)
                         appendLog("sending command to get qris data")
                         sendData(
@@ -191,7 +192,7 @@ class MainActivity : ComponentActivity(), SerialInputOutputManager.Listener {
                                 transactionId = QRISTransactionId
                             ).hexToByteArray()
                         )
-                    }
+                    }*/
 
                     if(asciiString.contains("GENERATE QR")){
                         appendLog("receiving QRIS data result")
@@ -260,7 +261,11 @@ class MainActivity : ComponentActivity(), SerialInputOutputManager.Listener {
                         qrStringData = qrStringData.value,
                         onSubmit = { amount ->
                             if(port != null){
-                                sendData(generateSaleQRISBNICommand(amount).hexToByteArray())
+                                //sendData(generateSaleQRISBNICommand(amount).hexToByteArray())
+                                val data = generateShowQRISCommand(amount = qrAmount).hexToByteArray()
+                                val stringData = data.joinToString(" ") { "%02X".format(it) }
+                                appendLog("sending command:\n$stringData")
+                                sendData(data)
                             }else{
                                 appendLog("no EDC found")
                             }
