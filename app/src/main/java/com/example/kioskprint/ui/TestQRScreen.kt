@@ -22,7 +22,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -49,7 +48,8 @@ fun PreviewQRTestScreen(){
 fun TestQRScreen(
     eventLog: String = "",
     qrStringData: String = "",
-    onSubmit: (amount: Double) -> Unit = {}
+    onSubmit: (amount: Double) -> Unit = {},
+    onCheckStatus: () -> Unit = {}
 ) {
     Scaffold(
         modifier = Modifier.fillMaxSize()
@@ -129,6 +129,19 @@ fun TestQRScreen(
                     ) {
                         Text(
                             text = "Submit",
+                            fontSize = (maxWidthInDp.value * 0.045f).sp
+                        )
+                    }
+                    ElevatedButton(
+                        onClick = {
+                            onCheckStatus()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(maxHeightInDp * 0.05f)
+                    ) {
+                        Text(
+                            text = "check status",
                             fontSize = (maxWidthInDp.value * 0.045f).sp
                         )
                     }

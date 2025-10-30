@@ -7,8 +7,10 @@ import com.example.kioskprint.ElectronicCashRegisterUtil.Companion.SUB_TRANS_TYP
 import com.example.kioskprint.ElectronicCashRegisterUtil.Companion.SUB_TRANS_TYPE_SALE_QRIS_BNI
 import com.example.kioskprint.ElectronicCashRegisterUtil.Companion.SUB_TRANS_TYPE_SALE_QRIS_OTHER
 import com.example.kioskprint.ElectronicCashRegisterUtil.Companion.SUB_TRANS_TYPE_SHOW_QRIS
+import com.example.kioskprint.ElectronicCashRegisterUtil.Companion.SUB_TRANS_TYPE_SHOW_QRIS_BNI
 import com.example.kioskprint.ElectronicCashRegisterUtil.Companion.TRANS_TYPE_CARD
 import com.example.kioskprint.ElectronicCashRegisterUtil.Companion.TRANS_TYPE_CHECK_CONNECTION
+import com.example.kioskprint.ElectronicCashRegisterUtil.Companion.TRANS_TYPE_CHECK_STATUS_QRIS
 import com.example.kioskprint.ElectronicCashRegisterUtil.Companion.TRANS_TYPE_SALE_QRIS
 import com.example.kioskprint.ElectronicCashRegisterUtil.Companion.TRANS_TYPE_SHOW_QRIS
 import com.example.kioskprint.ElectronicCashRegisterUtil.Companion.VERSION
@@ -25,10 +27,12 @@ class ElectronicCashRegisterUtil {
         const val TRANS_TYPE_CHECK_CONNECTION = "3B"
         const val TRANS_TYPE_SALE_QRIS = "65"
         const val TRANS_TYPE_SHOW_QRIS = "66"
+        const val TRANS_TYPE_CHECK_STATUS_QRIS = "67"
 
         //sub trans type
         const val SUB_TRANS_TYPE_CARD = "30"
-        const val SUB_TRANS_TYPE_SHOW_QRIS = "31"
+        const val SUB_TRANS_TYPE_SHOW_QRIS = "30"
+        const val SUB_TRANS_TYPE_SHOW_QRIS_BNI = "31"
         const val SUB_TRANS_TYPE_CHECK_CONNECTION = "33"
         const val SUB_TRANS_TYPE_SALE_QRIS_BNI = "37"
         const val SUB_TRANS_TYPE_SALE_QRIS_OTHER = "3D"
@@ -58,6 +62,21 @@ fun Int.toPriceAmountHexString(): String {
     val paddedAmount = this.toString().padStart(12, '0')
     // Convert each character digit to its ASCII hex representation
     return paddedAmount.map { c -> "%02X".format(c.code) }.joinToString(separator = "")
+}
+
+fun generateCheckStatusQRISCommand(billId: String, trxId: String): String {
+    val billHex = billId.asciiToHexString()
+    val trxHex = trxId.asciiToHexString()
+    val command = "$HEADER$VERSION$TRANS_TYPE_CHECK_STATUS_QRIS$SUB_TRANS_TYPE_SHOW_QRIS$billHex$trxHex$STOP_TAG"
+    val crc = command.calculateCRC()
+    return "$command$crc"
+}
+
+fun generateShowQRISBNICommand(amount: Double): String {
+    val amountHex = amount.roundToInt().toPriceAmountHexString()
+    val command = "$HEADER$VERSION$TRANS_TYPE_SHOW_QRIS$SUB_TRANS_TYPE_SHOW_QRIS_BNI$amountHex$STOP_TAG"
+    val crc = command.calculateCRC()
+    return "$command$crc"
 }
 
 //generate show QRIS Command
@@ -127,4 +146,12 @@ fun extractFieldFromAscii(ascii: String, fieldIndex: Int): String {
     val fields = ascii.split('|')
     // Make sure fieldIndex is within the field bounds
     return fields.getOrElse(fieldIndex) { "" }
+}
+
+fun extractTokenAtIndex8(input: String): String? {
+    return input
+        .split('|')
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .getOrNull(8) // zero-based index
 }

@@ -15,6 +15,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -69,8 +71,11 @@ class MainActivity : ComponentActivity(), SerialInputOutputManager.Listener {
             }
         }
     }
-    private val qrStringData = mutableStateOf("")
+    private val qrStringData: MutableState<String?> = mutableStateOf(null)
     private val qrAmount = 0.0
+    private var billId: String = ""
+    private var transactionId: String = ""
+    private var isWaitingQRISPayment = false
 
     private var printService: SunmiPrinterService? = null
     private val eventLog = mutableStateOf("")
@@ -186,28 +191,36 @@ class MainActivity : ComponentActivity(), SerialInputOutputManager.Listener {
 
             if(data.size > 11){
                 if (data[4] == 0x30.toByte() && data[5] == 0x30.toByte()) {
-                    appendLog("transaction success")
-
+                    //appendLog("transaction success")
                     val asciiString = hexStringToAscii(hexData)
-                    //val transactionType = extractFieldFromAscii(asciiString, 4)
 
-                    /*if(transactionType == "SALE QR"){
-                        val QRISTransactionId = extractFieldFromAscii(asciiString, 15)
-                        appendLog("sending command to get qris data")
-                        sendData(
-                            generateShowQRISCommand(
-                                amount = qrAmount,
-                                transactionId = QRISTransactionId
-                            ).hexToByteArray()
-                        )
-                    }*/
+                    if(extractFieldFromAscii(asciiString, 3) == "GENERATE QR"){
+                        isWaitingQRISPayment = true
+                        appendLog("receiving QRIS data image")
+                        val qrData = extractTokenAtIndex8(asciiString)
+                        billId = extractFieldFromAscii(asciiString, 7).let {
+                            if (it.length < 18) " ".repeat(18 - it.length) + it else it
+                        }
+                        transactionId = extractFieldFromAscii(asciiString, 9)
 
-                    if(asciiString.contains("GENERATE QR")){
-                        appendLog("receiving QRIS data result")
-                        val qrData = extractFieldFromAscii(asciiString, 8)
                         runOnUiThread {
+                            appendLog("isWaitingQRISPayment: $isWaitingQRISPayment")
                             qrStringData.value = qrData
                         }
+                    }
+
+                    if(asciiString.contains("CHECK STATUS QR")){
+                        appendLog("receiving check status QRIS data result")
+                        val bankMember = extractFieldFromAscii(asciiString, 0)
+                        val referenceNumber = extractFieldFromAscii(asciiString, 9)
+                        val approvalCode = extractFieldFromAscii(asciiString, 10)
+                        val issuer = extractFieldFromAscii(asciiString, 13)
+                        val customer = extractFieldFromAscii(asciiString, 14)
+                        appendLog("bankMember: $bankMember")
+                        appendLog("referenceNumber: $referenceNumber")
+                        appendLog("approvalCode: $approvalCode")
+                        appendLog("issuer: $issuer")
+                        appendLog("customer: $customer")
                     }
 
                 }else{
@@ -251,7 +264,7 @@ class MainActivity : ComponentActivity(), SerialInputOutputManager.Listener {
             val navController = rememberNavController()
             NavHost(
                 navController = navController,
-                startDestination = Screen.PrintTest
+                startDestination = Screen.QRTest
             ) {
                 composable<Screen.PrintTest> {
                     TestPrintScreen(
@@ -267,19 +280,30 @@ class MainActivity : ComponentActivity(), SerialInputOutputManager.Listener {
                     )
                 }
                 composable<Screen.QRTest> {
+                    LaunchedEffect(qrStringData) {
+                        appendLog("launched effect qrStringData: ${qrStringData.value}")
+                    }
+
                     TestQRScreen(
                         eventLog = eventLog.value,
-                        qrStringData = qrStringData.value,
+                        qrStringData = qrStringData.value?: "",
                         onSubmit = { amount ->
                             if(port != null){
                                 //sendData(generateSaleQRISBNICommand(amount).hexToByteArray())
-                                val data = generateShowQRISCommand(amount = qrAmount).hexToByteArray()
+                                val data = generateShowQRISBNICommand(amount = qrAmount).hexToByteArray()
                                 val stringData = data.joinToString(" ") { "%02X".format(it) }
                                 appendLog("sending command:\n$stringData")
                                 sendData(data)
                             }else{
                                 appendLog("no EDC found")
                             }
+                        },
+                        onCheckStatus = {
+                            appendLog("checking status with billId: $billId")
+                            val data = generateCheckStatusQRISCommand(billId = billId, trxId = transactionId).hexToByteArray()
+                            val stringData = data.joinToString(" ") { "%02X".format(it) }
+                            appendLog("sending command:\n$stringData")
+                            sendData(data)
                         }
                     )
                 }
